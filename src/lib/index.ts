@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import 'source-map-support/register';
+import * as path from 'path';
 import * as snyk from './snyk/snyk';
 import handleError from './error';
 import { getPipedDataIn, init, getDebugModule } from './utils/utils';
@@ -14,6 +15,18 @@ import {
 } from './types';
 import { displayOutput } from './snyk/displayOutput';
 import { computeFailCode } from './snyk/snyk_utils';
+import {
+  loadSarifFile,
+  parseSarifContent,
+  computeSarifCodeDelta,
+  computeSarifCodeDeltaAgainstBaselineKeys,
+  getBaselineKeyAssetSet,
+} from './snyk/sarifCodeDelta';
+import {
+  displayCodeDelta,
+  displayCodeDeltaFromApi,
+  displayCodeDeltaFromApiIssues,
+} from './snyk/displayCodeDelta';
 export { SnykDeltaOutput } from './types';
 const Configstore = require('@snyk/configstore');
 
@@ -26,6 +39,128 @@ Snyk Tech Prevent Tool
 ================================================
 ================================================
 `;
+
+/**
+ * Run Snyk Code delta:
+ * - Piped: --code with SARIF on stdin and --baselineOrg (optional --baselineProject / --projectName).
+ * - SARIF file comparison: --code and two file path arguments (old, current).
+ * - Snapshots: --code with --currentOrg, --currentProject, --baselineOrg, --baselineProject (compare by key_asset).
+ */
+async function runCodeDelta(argv: {
+  code?: boolean;
+  currentOrg?: string;
+  currentProject?: string;
+  baselineOrg?: string;
+  baselineProject?: string;
+  projectName?: string;
+  targetReference?: string;
+  setPassIfNoBaseline?: boolean;
+  _?: string[];
+}): Promise<number> {
+  const isPiped = !process.stdin.isTTY;
+  const passIfNoBaseline = argv.setPassIfNoBaseline ?? false;
+  const debug = getDebugModule();
+
+  const compareCodeAnalysisSnapshots =
+    !!(argv.currentOrg && argv.currentProject && argv.baselineOrg && argv.baselineProject);
+  if (compareCodeAnalysisSnapshots && !isPiped) {
+    try {
+      debug(`Comparing code analysis snapshots for org: ${argv.currentOrg}, project: ${argv.currentProject}, baseline org: ${argv.baselineOrg}, baseline project: ${argv.baselineProject}`);
+      const baselineResponse = await snyk.getOrgCodeIssues(
+        argv.baselineOrg!,
+        argv.baselineProject,
+      );
+      const currentResponse = await snyk.getOrgCodeIssues(
+        argv.currentOrg!,
+        argv.currentProject,
+      );
+      const baselineKeyAssetSet = getBaselineKeyAssetSet(baselineResponse);
+      const currentData = currentResponse.data ?? [];
+      const newIssues = currentData.filter(
+        (issue) =>
+          !baselineKeyAssetSet.has(issue.attributes?.key_asset ?? ''),
+      );
+      displayCodeDeltaFromApiIssues(
+        newIssues,
+        baselineResponse.data?.length ?? 0,
+        currentData.length,
+      );
+      return newIssues.length > 0 ? 1 : 0;
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  const fileArgs: string[] = (argv._ ?? []).filter(
+    (a): a is string => typeof a === 'string' && a.length > 0 && !a.startsWith('--'),
+  );
+  const hasTwoFilePaths =
+    !compareCodeAnalysisSnapshots &&
+    fileArgs.length >= 2 &&
+    fileArgs[0] != null &&
+    fileArgs[1] != null;
+
+  if (!isPiped && hasTwoFilePaths) {
+    const oldPath = fileArgs[0];
+    const currentPath = fileArgs[1];
+    const resolvedOld = path.isAbsolute(oldPath) ? oldPath : path.resolve(process.cwd(), oldPath);
+    const resolvedCurrent = path.isAbsolute(currentPath) ? currentPath : path.resolve(process.cwd(), currentPath);
+    const oldSarif = loadSarifFile(resolvedOld);
+    const newSarif = loadSarifFile(resolvedCurrent);
+    const delta = computeSarifCodeDelta(oldSarif, newSarif);
+    displayCodeDelta(delta, { showUnchanged: false });
+    return delta.new.length > 0 ? 1 : 0;
+  }
+
+  if (isPiped) {
+    if (!argv.baselineOrg) {
+      throw new BadInputError(
+        '--baselineOrg (and optionally --baselineProject or --projectName) required when using piped SARIF input with --code.',
+      );
+    }
+    try {
+      const raw = await getPipedDataIn();
+      const currentSarif = parseSarifContent(raw);
+      let baselineProjectId: string | undefined = argv.baselineProject;
+      if (!baselineProjectId && (argv.projectName || argv.targetReference)) {
+        const projectsResp = await snyk.getCodeAnalysisProject(
+          argv.baselineOrg,
+          argv.projectName,
+          argv.targetReference,
+        );
+        const first = projectsResp.data?.[0];
+        if (!first) {
+          const projectName = argv.projectName ? `, projectName: '${argv.projectName}'` : '';
+          const targetReference = argv.targetReference ? `, targetReference: '${argv.targetReference}'` : '';
+          debug(`No code analysis project found for org: ${argv.baselineOrg} ${projectName} ${targetReference}.`);
+          if (!passIfNoBaseline) {
+            throw new BadInputError(
+              `No code analysis project found for org: ${argv.baselineOrg} ${projectName} ${targetReference}.`,
+            );
+          }
+        }
+        baselineProjectId = first?.id ?? undefined;
+      }
+      const apiResponse = await snyk.getOrgCodeIssues(
+        argv.baselineOrg,
+        baselineProjectId,
+      );
+      const baselineKeyAssetSet = getBaselineKeyAssetSet(apiResponse);
+      const delta = computeSarifCodeDeltaAgainstBaselineKeys(
+        currentSarif,
+        baselineKeyAssetSet,
+      );
+      displayCodeDeltaFromApi(delta);
+      return delta.new.length > 0 && (!passIfNoBaseline || !!baselineProjectId) ? 1 : 0;
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  throw new BadInputError(
+    'snyk-delta --code requires one of: (1) piped SARIF input with --baselineOrg, (2) two file paths (old SARIF, current SARIF), or (3) --currentOrg, --currentProject, --baselineOrg, --baselineProject for Snapshots code delta.',
+  );
+}
 
 const getDelta = async (
   snykTestOutput: string | undefined = undefined,
@@ -49,12 +184,27 @@ const getDelta = async (
     currentProject?: string;
     baselineOrg?: string;
     baselineProject?: string;
+    projectName?: string;
     'fail-on'?: string;
     setPassIfNoBaseline?: boolean;
     type?: string;
     targetReference?: string;
+    code?: boolean;
+    _?: string[];
   } = init(debugMode);
   const debug = getDebugModule();
+
+  if (argv.code) {
+    try {
+      const code = await runCodeDelta(argv);
+      process.exitCode = code;
+    } catch (err) {
+      handleError(err as Error);
+      process.exitCode = 2;
+    }
+    return process.exitCode as number;
+  }
+
   if (process.env.NODE_ENV == 'test') {
     argv.type = process.env.TYPE ? process.env.TYPE : 'all';
   }

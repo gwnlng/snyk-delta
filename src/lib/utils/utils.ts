@@ -38,7 +38,12 @@ Mode: ${chalk.bold('standalone')}
 Description: Compares 2 monitored project snapshots by coordinates (baseline-org/baseline-project vs org/project)
 Example: ${chalk.bold(
         '$ snyk-delta --baselineOrg uuid-xxx-xxx-xxx --baselineProject uuid-xxx-xxx-xxx --currentOrg uuid-xxx-xxx-xxx --currentProject uuid-xxx-xxx-xxx',
-      )}`,
+      )}
+
+${chalk.bold('Code delta')} (${chalk.bold('--code')}): Compare Snyk Code
+  Piped: SARIF on stdin; baseline from API with ${chalk.bold('--baselineOrg')}. Example: ${chalk.bold('$ cat current.sarif | snyk-delta --code --baselineOrg uuid --projectName my-project')}
+  Files: two file paths (old, current). Example: ${chalk.bold('$ snyk-delta --code old.sarif.json current.sarif.json')}
+  Snapshots: compare two projects by key_asset with ${chalk.bold('--currentOrg')}, ${chalk.bold('--currentProject')}, ${chalk.bold('--baselineOrg')}, ${chalk.bold('--baselineProject')}. Example: ${chalk.bold('$ snyk-delta --code --currentOrg uuid --currentProject uuid --baselineOrg uuid --baselineProject uuid')}`,
     )
     .help('h')
     .alias('h', 'help')
@@ -85,6 +90,18 @@ Example: ${chalk.bold(
         describe:
           'Fail only if the detected issues are fixable (patchable / upgradable). Matches the behaviour of `--fail-on` in snyk CLI',
         choices: ['all', 'upgradable', 'patchable'],
+        demandOption: false,
+      },
+      code: {
+        type: 'boolean',
+        describe:
+          'Compare Snyk Code SARIF: with piped input uses API baseline; with two file paths compares old vs current SARIF',
+        demandOption: false,
+      },
+      projectName: {
+        type: 'string',
+        describe:
+          'Project name (for --code piped mode): filter baseline by project name; can be used with or without --baselineProject',
         demandOption: false,
       },
     })
