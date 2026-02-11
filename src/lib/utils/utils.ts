@@ -26,12 +26,12 @@ const init = (debugMode = false):any => {
   const pkgJSON = JSON.parse(fs.readFileSync(pkgJSONPath).toString());
   const argv = yargs
     .usage(
-      `${chalk.bold('snyk-delta')} has 2 modes of operations: ${chalk.bold(
+      `${chalk.bold('snyk-delta')} has 4 modes of operations: ${chalk.bold(
         'Inline',
-      )} and ${chalk.bold('Standalone')}
+      )}, ${chalk.bold('Standalone')}, ${chalk.bold('code-delta piped sarif input')} and ${chalk.bold('code-delta sarif files')}
 
 Mode: ${chalk.bold('inline')}
-Description: Compares 'snyk test' output to a baseline Snyk project latest snapshot
+Description: Compares 'snyk test' or 'snyk code test' output to a baseline Snyk project latest snapshot
 Example: ${chalk.bold('$ snyk test --json | snyk-delta')}
 
 Mode: ${chalk.bold('standalone')}
@@ -39,11 +39,24 @@ Description: Compares 2 monitored project snapshots by coordinates (baseline-org
 Example: ${chalk.bold(
         '$ snyk-delta --baselineOrg uuid-xxx-xxx-xxx --baselineProject uuid-xxx-xxx-xxx --currentOrg uuid-xxx-xxx-xxx --currentProject uuid-xxx-xxx-xxx',
       )}
+Example: ${chalk.bold(
+        '$ snyk-delta --code --baselineOrg uuid-xxx-xxx-xxx --baselineProject uuid-xxx-xxx-xxx --currentOrg uuid-xxx-xxx-xxx --currentProject uuid-xxx-xxx-xxx',
+      )}
 
-${chalk.bold('Code delta')} (${chalk.bold('--code')}): Compare Snyk Code
-  Piped: SARIF on stdin; baseline from API with ${chalk.bold('--baselineOrg')}. Example: ${chalk.bold('$ cat current.sarif | snyk-delta --code --baselineOrg uuid --projectName my-project')}
-  Files: two file paths (old, current). Example: ${chalk.bold('$ snyk-delta --code old.sarif.json current.sarif.json')}
-  Snapshots: compare two projects by key_asset with ${chalk.bold('--currentOrg')}, ${chalk.bold('--currentProject')}, ${chalk.bold('--baselineOrg')}, ${chalk.bold('--baselineProject')}. Example: ${chalk.bold('$ snyk-delta --code --currentOrg uuid --currentProject uuid --baselineOrg uuid --baselineProject uuid')}`,
+Mode: ${chalk.bold('code-delta piped sarif input')}
+Description: Compares SARIF on stdin to a baseline Snyk Code Analysis project latest snapshot
+Example: ${chalk.bold(
+        '$ snyk code test --sarif | snyk-delta --code --baselineOrg uuid-xxx-xxx-xxx --baselineProject uuid-xxx-xxx-xxx',
+      )}
+Example: ${chalk.bold(
+        '$ snyk code test --sarif | snyk-delta --code --baselineOrg uuid-xxx-xxx-xxx --projectName "owner/repo" --targetReference "branchName"',
+      )}
+
+Mode: ${chalk.bold('code-delta sarif files')}
+Description: Compares two SARIF files on Snyk Code Analysis issues
+Example: ${chalk.bold(
+        '$ snyk-delta --code old.sarif.json current.sarif.json',
+      )}`,
     )
     .help('h')
     .alias('h', 'help')
@@ -95,13 +108,13 @@ ${chalk.bold('Code delta')} (${chalk.bold('--code')}): Compare Snyk Code
       code: {
         type: 'boolean',
         describe:
-          'Compare Snyk Code SARIF: with piped input uses API baseline; with two file paths compares old vs current SARIF',
+          'Perform Snyk Code Analysis delta comparison of either piped SARIF input, two Code Analysis projects or two SARIF files',
         demandOption: false,
       },
       projectName: {
         type: 'string',
         describe:
-          'Project name (for --code piped mode): filter baseline by project name; can be used with or without --baselineProject',
+          'Project name to compare against for Code Analysis delta comparison',
         demandOption: false,
       },
     })
