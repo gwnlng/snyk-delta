@@ -64,31 +64,27 @@ async function runCodeDelta(argv: {
   const compareCodeAnalysisSnapshots =
     !!(argv.currentOrg && argv.currentProject && argv.baselineOrg && argv.baselineProject);
   if (compareCodeAnalysisSnapshots && !isPiped) {
-    try {
-      debug(`Comparing code analysis snapshots for org: ${argv.currentOrg}, project: ${argv.currentProject}, baseline org: ${argv.baselineOrg}, baseline project: ${argv.baselineProject}`);
-      const baselineResponse = await snyk.getOrgCodeIssues(
-        argv.baselineOrg!,
-        argv.baselineProject,
-      );
-      const currentResponse = await snyk.getOrgCodeIssues(
-        argv.currentOrg!,
-        argv.currentProject,
-      );
-      const baselineKeyAssetSet = getBaselineKeyAssetSet(baselineResponse);
-      const currentData = currentResponse.data ?? [];
-      const newIssues = currentData.filter(
-        (issue) =>
-          !baselineKeyAssetSet.has(issue.attributes?.key_asset ?? ''),
-      );
-      displayCodeDeltaFromApiIssues(
-        newIssues,
-        baselineResponse.data?.length ?? 0,
-        currentData.length,
-      );
-      return newIssues.length > 0 ? 1 : 0;
-    } catch (err) {
-      throw err;
-    }
+    debug(`Comparing code analysis snapshots for org: ${argv.currentOrg}, project: ${argv.currentProject}, baseline org: ${argv.baselineOrg}, baseline project: ${argv.baselineProject}`);
+    const baselineResponse = await snyk.getOrgCodeIssues(
+      argv.baselineOrg!,
+      argv.baselineProject,
+    );
+    const currentResponse = await snyk.getOrgCodeIssues(
+      argv.currentOrg!,
+      argv.currentProject,
+    );
+    const baselineKeyAssetSet = getBaselineKeyAssetSet(baselineResponse);
+    const currentData = currentResponse.data ?? [];
+    const newIssues = currentData.filter(
+      (issue) =>
+        !baselineKeyAssetSet.has(issue.attributes?.key_asset ?? ''),
+    );
+    displayCodeDeltaFromApiIssues(
+      newIssues,
+      baselineResponse.data?.length ?? 0,
+      currentData.length,
+    );
+    return newIssues.length > 0 ? 1 : 0;
   }
 
   const fileArgs: string[] = (argv._ ?? []).filter(
@@ -118,43 +114,39 @@ async function runCodeDelta(argv: {
         '--baselineOrg (and optionally --baselineProject or --projectName) required when using piped SARIF input with --code.',
       );
     }
-    try {
-      const raw = await getPipedDataIn();
-      const currentSarif = parseSarifContent(raw);
-      let baselineProjectId: string | undefined = argv.baselineProject;
-      if (!baselineProjectId && (argv.projectName || argv.targetReference)) {
-        const projectsResp = await snyk.getCodeAnalysisProject(
-          argv.baselineOrg,
-          argv.projectName,
-          argv.targetReference,
-        );
-        const first = projectsResp.data?.[0];
-        if (!first) {
-          const projectName = argv.projectName ? `, projectName: '${argv.projectName}'` : '';
-          const targetReference = argv.targetReference ? `, targetReference: '${argv.targetReference}'` : '';
-          debug(`No code analysis project found for org: ${argv.baselineOrg} ${projectName} ${targetReference}.`);
-          if (!passIfNoBaseline) {
-            throw new BadInputError(
-              `No code analysis project found for org: ${argv.baselineOrg} ${projectName} ${targetReference}.`,
-            );
-          }
-        }
-        baselineProjectId = first?.id ?? undefined;
-      }
-      const apiResponse = await snyk.getOrgCodeIssues(
+    const raw = await getPipedDataIn();
+    const currentSarif = parseSarifContent(raw);
+    let baselineProjectId: string | undefined = argv.baselineProject;
+    if (!baselineProjectId && (argv.projectName || argv.targetReference)) {
+      const projectsResp = await snyk.getCodeAnalysisProject(
         argv.baselineOrg,
-        baselineProjectId,
+        argv.projectName,
+        argv.targetReference,
       );
-      const baselineKeyAssetSet = getBaselineKeyAssetSet(apiResponse);
-      const delta = computeSarifCodeDeltaAgainstBaselineKeys(
-        currentSarif,
-        baselineKeyAssetSet,
-      );
-      displayCodeDeltaFromApi(delta);
-      return delta.new.length > 0 && (!passIfNoBaseline || !!baselineProjectId) ? 1 : 0;
-    } catch (err) {
-      throw err;
+      const first = projectsResp.data?.[0];
+      if (!first) {
+        const projectName = argv.projectName ? `, projectName: '${argv.projectName}'` : '';
+        const targetReference = argv.targetReference ? `, targetReference: '${argv.targetReference}'` : '';
+        debug(`No code analysis project found for org: ${argv.baselineOrg} ${projectName} ${targetReference}.`);
+        if (!passIfNoBaseline) {
+          throw new BadInputError(
+            `No code analysis project found for org: ${argv.baselineOrg} ${projectName} ${targetReference}.`,
+          );
+        }
+      }
+      baselineProjectId = first?.id ?? undefined;
     }
+    const apiResponse = await snyk.getOrgCodeIssues(
+      argv.baselineOrg,
+      baselineProjectId,
+    );
+    const baselineKeyAssetSet = getBaselineKeyAssetSet(apiResponse);
+    const delta = computeSarifCodeDeltaAgainstBaselineKeys(
+      currentSarif,
+      baselineKeyAssetSet,
+    );
+    displayCodeDeltaFromApi(delta);
+    return delta.new.length > 0 && (!passIfNoBaseline || !!baselineProjectId) ? 1 : 0;
   }
 
   throw new BadInputError(

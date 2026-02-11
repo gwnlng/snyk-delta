@@ -10,7 +10,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 import {
   SarifDocument,
-  SarifRun,
   SarifResult,
   SarifCodeFinding,
   SarifRegion,
@@ -86,15 +85,6 @@ function collectResults(doc: SarifDocument): SarifResult[] {
 }
 
 /**
- * Load and parse a SARIF JSON file.
- */
-function loadSarifFile(filePath: string): SarifDocument {
-  const resolved = path.resolve(filePath);
-  const content = fs.readFileSync(resolved, 'utf-8');
-  return parseSarifContent(content);
-}
-
-/**
  * Parse SARIF JSON string into a SarifDocument (e.g. from piped stdin).
  */
 function parseSarifContent(content: string): SarifDocument {
@@ -103,6 +93,15 @@ function parseSarifContent(content: string): SarifDocument {
     throw new Error('Invalid SARIF: missing or non-array "runs"');
   }
   return doc;
+}
+
+/**
+ * Load and parse a SARIF JSON file.
+ */
+function loadSarifFile(filePath: string): SarifDocument {
+  const resolved = path.resolve(filePath);
+  const content = fs.readFileSync(resolved, 'utf-8');
+  return parseSarifContent(content);
 }
 
 export interface SarifCodeDeltaResult {
