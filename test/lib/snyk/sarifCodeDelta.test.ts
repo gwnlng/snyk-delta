@@ -20,22 +20,32 @@ describe('sarifCodeDelta', () => {
       const doc = loadSarifFile(path.join(fixturesPath, 'old.sarif.json'));
       const results = collectResults(doc);
       expect(results).toHaveLength(1);
-      expect(results[0].fingerprints?.['snyk/asset/finding/v1']).toBe('asset-finding-001');
+      expect(results[0].fingerprints?.['snyk/asset/finding/v1']).toBe(
+        'asset-finding-001',
+      );
     });
 
     it('should load new-with-addition.sarif.json and collect 2 results', () => {
-      const doc = loadSarifFile(path.join(fixturesPath, 'new-with-addition.sarif.json'));
+      const doc = loadSarifFile(
+        path.join(fixturesPath, 'new-with-addition.sarif.json'),
+      );
       const results = collectResults(doc);
       expect(results).toHaveLength(2);
-      expect(results[0].fingerprints?.['snyk/asset/finding/v1']).toBe('asset-finding-001');
-      expect(results[1].fingerprints?.['snyk/asset/finding/v1']).toBe('asset-finding-002');
+      expect(results[0].fingerprints?.['snyk/asset/finding/v1']).toBe(
+        'asset-finding-001',
+      );
+      expect(results[1].fingerprints?.['snyk/asset/finding/v1']).toBe(
+        'asset-finding-002',
+      );
     });
   });
 
   describe('computeSarifCodeDelta', () => {
     it('should report one new finding when new has an extra result', () => {
       const oldSarif = loadSarifFile(path.join(fixturesPath, 'old.sarif.json'));
-      const newSarif = loadSarifFile(path.join(fixturesPath, 'new-with-addition.sarif.json'));
+      const newSarif = loadSarifFile(
+        path.join(fixturesPath, 'new-with-addition.sarif.json'),
+      );
       const delta = computeSarifCodeDelta(oldSarif, newSarif);
 
       expect(delta.oldTotal).toBe(1);
@@ -48,7 +58,9 @@ describe('sarifCodeDelta', () => {
 
     it('should report no delta when old and new have same findings', () => {
       const oldSarif = loadSarifFile(path.join(fixturesPath, 'old.sarif.json'));
-      const newSarif = loadSarifFile(path.join(fixturesPath, 'new-same.sarif.json'));
+      const newSarif = loadSarifFile(
+        path.join(fixturesPath, 'new-same.sarif.json'),
+      );
       const delta = computeSarifCodeDelta(oldSarif, newSarif);
 
       expect(delta.new).toHaveLength(0);
@@ -57,7 +69,9 @@ describe('sarifCodeDelta', () => {
     });
 
     it('should report fixed finding when new has fewer than old', () => {
-      const oldSarif = loadSarifFile(path.join(fixturesPath, 'new-with-addition.sarif.json'));
+      const oldSarif = loadSarifFile(
+        path.join(fixturesPath, 'new-with-addition.sarif.json'),
+      );
       const newSarif = loadSarifFile(path.join(fixturesPath, 'old.sarif.json'));
       const delta = computeSarifCodeDelta(oldSarif, newSarif);
 
@@ -70,13 +84,18 @@ describe('sarifCodeDelta', () => {
   describe('getBaselineKeyAssetSet and computeSarifCodeDeltaAgainstBaselineKeys', () => {
     it('should build baseline set from REST issues and mark only non-baseline findings as new', () => {
       const baselineResponse = JSON.parse(
-        fs.readFileSync(path.join(fixturesPath, 'rest-issues-baseline.json'), 'utf-8'),
+        fs.readFileSync(
+          path.join(fixturesPath, 'rest-issues-baseline.json'),
+          'utf-8',
+        ),
       );
       const set = getBaselineKeyAssetSet(baselineResponse);
       expect(set.has('asset-finding-001')).toBe(true);
       expect(set.size).toBe(1);
 
-      const currentSarif = loadSarifFile(path.join(fixturesPath, 'new-with-addition.sarif.json'));
+      const currentSarif = loadSarifFile(
+        path.join(fixturesPath, 'new-with-addition.sarif.json'),
+      );
       const delta = computeSarifCodeDeltaAgainstBaselineKeys(currentSarif, set);
       expect(delta.newTotal).toBe(2);
       expect(delta.baselineCount).toBe(1);

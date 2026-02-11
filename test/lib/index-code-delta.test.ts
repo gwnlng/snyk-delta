@@ -17,7 +17,10 @@ const stdinMock: MockSTDIN = stdin();
 const mockExit = mockProcessExit();
 
 const originalLog = console.log;
-const originalStdinDescriptor = Object.getOwnPropertyDescriptor(process.stdin, 'isTTY');
+const originalStdinDescriptor = Object.getOwnPropertyDescriptor(
+  process.stdin,
+  'isTTY',
+);
 function mockStdinTTY(value: boolean | undefined) {
   Object.defineProperty(process.stdin, 'isTTY', {
     value,
@@ -79,7 +82,10 @@ describe('Code delta - two file paths (SARIF comparison)', () => {
 
   it('should run file comparison and report new findings when current has more findings (exit 1)', async () => {
     const oldPath = path.resolve(codeDeltaFixtures, 'old.sarif.json');
-    const newPath = path.resolve(codeDeltaFixtures, 'new-with-addition.sarif.json');
+    const newPath = path.resolve(
+      codeDeltaFixtures,
+      'new-with-addition.sarif.json',
+    );
     process.argv.push(oldPath, newPath);
 
     const result = await getDelta(undefined, true);
@@ -94,8 +100,14 @@ describe('Code delta - two file paths (SARIF comparison)', () => {
   });
 
   it('should exit 2 when first file does not exist (ENOENT)', async () => {
-    const missingPath = path.resolve(codeDeltaFixtures, 'does-not-exist.sarif.json');
-    process.argv.push(missingPath, path.resolve(codeDeltaFixtures, 'new-same.sarif.json'));
+    const missingPath = path.resolve(
+      codeDeltaFixtures,
+      'does-not-exist.sarif.json',
+    );
+    process.argv.push(
+      missingPath,
+      path.resolve(codeDeltaFixtures, 'new-same.sarif.json'),
+    );
 
     const result = await getDelta(undefined, true);
 
@@ -137,7 +149,10 @@ describe('Code delta - piped SARIF + baseline from API', () => {
   it('should require --baselineOrg when piped and no baselineOrg (exit 2)', async () => {
     process.argv.length = 0;
     ['node', 'snyk-delta', '--code'].forEach((a) => process.argv.push(a));
-    const sarifContent = fs.readFileSync(path.join(codeDeltaFixtures, 'old.sarif.json'), 'utf-8');
+    const sarifContent = fs.readFileSync(
+      path.join(codeDeltaFixtures, 'old.sarif.json'),
+      'utf-8',
+    );
     stdinMock.send(sarifContent);
     stdinMock.end();
 
@@ -148,13 +163,19 @@ describe('Code delta - piped SARIF + baseline from API', () => {
 
   it('should run piped mode: SARIF on stdin vs baseline from API and report delta', async () => {
     const baselineIssues = JSON.parse(
-      fs.readFileSync(path.join(codeDeltaFixtures, 'rest-issues-baseline.json'), 'utf-8'),
+      fs.readFileSync(
+        path.join(codeDeltaFixtures, 'rest-issues-baseline.json'),
+        'utf-8',
+      ),
     );
     nock('https://api.snyk.io')
       .get(/\/rest\/orgs\/.*\/issues/)
       .reply(200, baselineIssues);
 
-    const currentSarif = fs.readFileSync(path.join(codeDeltaFixtures, 'new-with-addition.sarif.json'), 'utf-8');
+    const currentSarif = fs.readFileSync(
+      path.join(codeDeltaFixtures, 'new-with-addition.sarif.json'),
+      'utf-8',
+    );
     stdinMock.send(currentSarif);
     stdinMock.end();
 
@@ -208,16 +229,24 @@ describe('Code delta - Snapshots (compare by key_asset)', () => {
 
   it('should run Snapshots mode and report no new findings when current matches baseline (exit 0)', async () => {
     const baselineIssues = JSON.parse(
-      fs.readFileSync(path.join(codeDeltaFixtures, 'rest-issues-baseline.json'), 'utf-8'),
+      fs.readFileSync(
+        path.join(codeDeltaFixtures, 'rest-issues-baseline.json'),
+        'utf-8',
+      ),
     );
     const currentIssues = JSON.parse(
-      fs.readFileSync(path.join(codeDeltaFixtures, 'rest-issues-current-same.json'), 'utf-8'),
+      fs.readFileSync(
+        path.join(codeDeltaFixtures, 'rest-issues-current-same.json'),
+        'utf-8',
+      ),
     );
 
     let apiCallCount = 0;
     nock('https://api.snyk.io')
       .get(/\/rest\/orgs\/.*\/issues/)
-      .reply(200, () => (++apiCallCount === 1 ? baselineIssues : currentIssues));
+      .reply(200, () =>
+        ++apiCallCount === 1 ? baselineIssues : currentIssues,
+      );
 
     const result = await getDelta(undefined, true);
 
@@ -231,16 +260,24 @@ describe('Code delta - Snapshots (compare by key_asset)', () => {
 
   it('should run Snapshots mode and report new findings (exit 1)', async () => {
     const baselineIssues = JSON.parse(
-      fs.readFileSync(path.join(codeDeltaFixtures, 'rest-issues-baseline.json'), 'utf-8'),
+      fs.readFileSync(
+        path.join(codeDeltaFixtures, 'rest-issues-baseline.json'),
+        'utf-8',
+      ),
     );
     const currentIssues = JSON.parse(
-      fs.readFileSync(path.join(codeDeltaFixtures, 'rest-issues-current-with-new.json'), 'utf-8'),
+      fs.readFileSync(
+        path.join(codeDeltaFixtures, 'rest-issues-current-with-new.json'),
+        'utf-8',
+      ),
     );
 
     let apiCallCount = 0;
     nock('https://api.snyk.io')
       .get(/\/rest\/orgs\/.*\/issues/)
-      .reply(200, () => (++apiCallCount === 1 ? baselineIssues : currentIssues));
+      .reply(200, () =>
+        ++apiCallCount === 1 ? baselineIssues : currentIssues,
+      );
 
     const result = await getDelta(undefined, true);
 
@@ -314,7 +351,10 @@ describe('Code delta - sarifCodeDelta unit behavior (via file mode)', () => {
   });
 
   it('should show fixed findings when current has fewer than baseline', async () => {
-    const oldPath = path.resolve(codeDeltaFixtures, 'new-with-addition.sarif.json');
+    const oldPath = path.resolve(
+      codeDeltaFixtures,
+      'new-with-addition.sarif.json',
+    );
     const newPath = path.resolve(codeDeltaFixtures, 'old.sarif.json');
     process.argv.push(oldPath, newPath);
 
