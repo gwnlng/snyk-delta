@@ -28,11 +28,16 @@ const init = (debugMode = false):any => {
     .usage(
       `${chalk.bold('snyk-delta')} has 3 modes of operations: ${chalk.bold(
         'Inline',
-      )}, ${chalk.bold('Standalone')} and ${chalk.bold('Code delta')}
+      )}, ${chalk.bold('Code delta')} and ${chalk.bold('Standalone')}
 
 Mode: ${chalk.bold('inline')}
 Description: Compares 'snyk test' output to a baseline Snyk project latest snapshot
 Example: ${chalk.bold('$ snyk test --json | snyk-delta')}
+
+Mode: ${chalk.bold('code delta')}
+Description: Compares 'snyk code test' output to a baseline Snyk project latest snapshot
+Example: ${chalk.bold('$ snyk code test --sarif | snyk-delta --code --baselineOrg uuid-xxx-xxx-xxx --baselineProject uuid-xxx-xxx-xxx')}
+Example: ${chalk.bold('$ snyk code test --sarif | snyk-delta --code --baselineOrg uuid-xxx-xxx-xxx --projectName "owner/repo" --targetReference "branchName"')}
 
 Mode: ${chalk.bold('standalone')}
 Description: Compares 2 monitored project snapshots by coordinates (baseline-org/baseline-project vs org/project)

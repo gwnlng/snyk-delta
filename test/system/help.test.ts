@@ -12,12 +12,18 @@ describe('`snyk-delta help <...>`', () => {
       expect(err).toBeNull();
       expect(stderr).toEqual('');
       expect(stripAnsi(stdout)).toMatchInlineSnapshot(`
-        "snyk-delta has 3 modes of operations: Inline, Standalone and Code delta
+        "snyk-delta has 3 modes of operations: Inline, Code delta and Standalone
 
         Mode: inline
         Description: Compares 'snyk test' output to a baseline Snyk project latest
         snapshot
         Example: $ snyk test --json | snyk-delta
+
+        Mode: code delta
+        Description: Compares 'snyk code test' output to a baseline Snyk project latest
+        snapshot
+        Example: $ snyk code test --sarif | snyk-delta --code --baselineOrg uuid-xxx-xxx-xxx --baselineProject uuid-xxx-xxx-xxx
+        Example: $ snyk code test --sarif | snyk-delta --code --baselineOrg uuid-xxx-xxx-xxx --projectName "owner/repo" --targetReference "branchName"
 
         Mode: standalone
         Description: Compares 2 monitored project snapshots by coordinates
