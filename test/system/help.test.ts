@@ -5,7 +5,9 @@ const main = './dist/index.js'.replace(/\//g, sep);
 
 describe('`snyk-delta help <...>`', () => {
   it('Shows help text as expected', (done) => {
-    exec(`node ${main} -h`, (err, stdout, stderr) => {
+    // Fixed COLUMNS so help output is deterministic in CI (no TTY) and locally
+    const env = { ...process.env, COLUMNS: '120' };
+    exec(`node ${main} -h`, { env }, (err, stdout, stderr) => {
       if (err) {
         throw err;
       }
