@@ -92,6 +92,16 @@ Example: ${chalk.bold(
         choices: ['all', 'upgradable', 'patchable'],
         demandOption: false,
       },
+      code: {
+        type: 'boolean',
+        describe: 'Perform Snyk Code Analysis delta comparison',
+        demandOption: false,
+      },
+      projectName: {
+        type: 'string',
+        describe: 'Project name to compare against for Code Analysis delta comparison',
+        demandOption: false,
+      }
     })
     .describe('d', 'Show debug logs')
     .version(pkgJSON.version).argv;
