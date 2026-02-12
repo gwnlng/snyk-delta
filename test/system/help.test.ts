@@ -13,7 +13,8 @@ describe('`snyk-delta help <...>`', () => {
       }
       expect(err).toBeNull();
       expect(stderr).toEqual('');
-      expect(stripAnsi(stdout)).toMatchInlineSnapshot(`
+      const helpOutput = stripAnsi(stdout).trimEnd();
+      expect(helpOutput).toMatchInlineSnapshot(`
         "snyk-delta has 4 modes of operations: Inline, Standalone, code-delta piped sarif
         input and code-delta sarif files
 
