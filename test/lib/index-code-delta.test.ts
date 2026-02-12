@@ -68,7 +68,7 @@ describe('Code delta - two file paths (SARIF comparison)', () => {
   it('should run file comparison when two SARIF paths given and report no new findings (exit 0)', async () => {
     const oldPath = path.resolve(codeDeltaFixtures, 'old.sarif.json');
     const newPath = path.resolve(codeDeltaFixtures, 'new-same.sarif.json');
-    process.argv.push(oldPath, newPath);
+    process.argv.push('--', oldPath, newPath);
 
     const result = await getDelta(undefined, true);
 
@@ -86,7 +86,7 @@ describe('Code delta - two file paths (SARIF comparison)', () => {
       codeDeltaFixtures,
       'new-with-addition.sarif.json',
     );
-    process.argv.push(oldPath, newPath);
+    process.argv.push('--', oldPath, newPath);
 
     const result = await getDelta(undefined, true);
 
@@ -105,6 +105,7 @@ describe('Code delta - two file paths (SARIF comparison)', () => {
       'does-not-exist.sarif.json',
     );
     process.argv.push(
+      '--',
       missingPath,
       path.resolve(codeDeltaFixtures, 'new-same.sarif.json'),
     );
@@ -320,7 +321,7 @@ describe('Code delta - error cases', () => {
   });
 
   it('should exit 2 when --code with only one file path', async () => {
-    process.argv.push(path.resolve(codeDeltaFixtures, 'old.sarif.json'));
+    process.argv.push('--', path.resolve(codeDeltaFixtures, 'old.sarif.json'));
 
     const result = await getDelta(undefined, true);
     expect([0, 2]).toContain(result);
@@ -356,7 +357,7 @@ describe('Code delta - sarifCodeDelta unit behavior (via file mode)', () => {
       'new-with-addition.sarif.json',
     );
     const newPath = path.resolve(codeDeltaFixtures, 'old.sarif.json');
-    process.argv.push(oldPath, newPath);
+    process.argv.push('--', oldPath, newPath);
 
     const result = await getDelta(undefined, true);
 
