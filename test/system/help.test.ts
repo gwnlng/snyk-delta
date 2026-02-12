@@ -55,10 +55,6 @@ describe('`snyk-delta help <...>`', () => {
                                      (patchable / upgradable). Matches the behaviour of
                                      \`--fail-on\` in snyk CLI
                                              [choices: \\"all\\", \\"upgradable\\", \\"patchable\\"]
-              --code                 Perform Snyk Code Analysis delta comparison
-                                                     [boolean]
-              --projectName          Project name to compare against for Code Analysis
-                                     delta comparison                                    [string]
           -d, --debug                Show debug logs
               --version              Show version number                       [boolean]
         "

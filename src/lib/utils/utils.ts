@@ -101,7 +101,7 @@ Example: ${chalk.bold(
         type: 'string',
         describe: 'Project name to compare against for Code Analysis delta comparison',
         demandOption: false,
-      }
+      },
     })
     .describe('d', 'Show debug logs')
     .version(pkgJSON.version).argv;
