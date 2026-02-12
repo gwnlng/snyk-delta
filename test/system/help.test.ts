@@ -27,7 +27,7 @@ describe('`snyk-delta help <...>`', () => {
         Example: $ snyk code test --sarif | snyk-delta --code --baselineOrg
         uuid-xxx-xxx-xxx --baselineProject uuid-xxx-xxx-xxx
         Example: $ snyk code test --sarif | snyk-delta --code --baselineOrg
-        uuid-xxx-xxx-xxx --projectName "owner/repo" --targetReference "branchName"
+        uuid-xxx-xxx-xxx --projectName \\"owner/repo\\" --targetReference \\"branchName\\"
 
         Mode: standalone
         Description: Compares 2 monitored project snapshots by coordinates
