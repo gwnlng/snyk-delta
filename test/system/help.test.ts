@@ -5,7 +5,9 @@ const main = './dist/index.js'.replace(/\//g, sep);
 
 describe('`snyk-delta help <...>`', () => {
   it('Shows help text as expected', (done) => {
-    exec(`node ${main} -h`, (err, stdout, stderr) => {
+    // Fixed COLUMNS so help output is deterministic in CI (no TTY) and locally
+    const env = { ...process.env, COLUMNS: '80' };
+    exec(`node ${main} -h`, { env }, (err, stdout, stderr) => {
       if (err) {
         throw err;
       }
@@ -22,8 +24,10 @@ describe('`snyk-delta help <...>`', () => {
         Mode: code delta
         Description: Compares 'snyk code test' output to a baseline Snyk project latest
         snapshot
-        Example: $ snyk code test --sarif | snyk-delta --code --baselineOrg uuid-xxx-xxx-xxx --baselineProject uuid-xxx-xxx-xxx
-        Example: $ snyk code test --sarif | snyk-delta --code --baselineOrg uuid-xxx-xxx-xxx --projectName "owner/repo" --targetReference "branchName"
+        Example: $ snyk code test --sarif | snyk-delta --code --baselineOrg
+        uuid-xxx-xxx-xxx --baselineProject uuid-xxx-xxx-xxx
+        Example: $ snyk code test --sarif | snyk-delta --code --baselineOrg
+        uuid-xxx-xxx-xxx --projectName "owner/repo" --targetReference "branchName"
 
         Mode: standalone
         Description: Compares 2 monitored project snapshots by coordinates
