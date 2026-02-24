@@ -5,40 +5,35 @@ const main = './dist/index.js'.replace(/\//g, sep);
 
 describe('`snyk-delta help <...>`', () => {
   it('Shows help text as expected', (done) => {
-    exec(`node ${main} -h`, (err, stdout, stderr) => {
+    // Fixed COLUMNS so help output is deterministic in CI (no TTY) and locally
+    const env = { ...process.env, COLUMNS: '80' };
+    exec(`node ${main} -h`, { env }, (err, stdout, stderr) => {
       if (err) {
         throw err;
       }
       expect(err).toBeNull();
       expect(stderr).toEqual('');
       expect(stripAnsi(stdout)).toMatchInlineSnapshot(`
-        "snyk-delta has 4 modes of operations: Inline, Standalone, code-delta piped sarif
-        input and code-delta sarif files
+        "snyk-delta has 3 modes of operations: Inline, Code delta and Standalone
 
         Mode: inline
-        Description: Compares 'snyk test' or 'snyk code test' output to a baseline Snyk
-        project latest snapshot
+        Description: Compares 'snyk test' output to a baseline Snyk project latest
+        snapshot
         Example: $ snyk test --json | snyk-delta
+
+        Mode: code delta
+        Description: Compares 'snyk code test' output to a baseline Snyk project latest
+        snapshot
+        Example: $ snyk code test --sarif | snyk-delta --code --baselineOrg
+        uuid-xxx-xxx-xxx --baselineProject uuid-xxx-xxx-xxx
+        Example: $ snyk code test --sarif | snyk-delta --code --baselineOrg
+        uuid-xxx-xxx-xxx --projectName \\"owner/repo\\" --targetReference \\"branchName\\"
 
         Mode: standalone
         Description: Compares 2 monitored project snapshots by coordinates
         (baseline-org/baseline-project vs org/project)
         Example: $ snyk-delta --baselineOrg uuid-xxx-xxx-xxx --baselineProject
         uuid-xxx-xxx-xxx --currentOrg uuid-xxx-xxx-xxx --currentProject uuid-xxx-xxx-xxx
-        Example: $ snyk-delta --code --baselineOrg uuid-xxx-xxx-xxx --baselineProject
-        uuid-xxx-xxx-xxx --currentOrg uuid-xxx-xxx-xxx --currentProject uuid-xxx-xxx-xxx
-
-        Mode: code-delta piped sarif input
-        Description: Compares SARIF on stdin to a baseline Snyk Code Analysis project
-        latest snapshot
-        Example: $ snyk code test --sarif | snyk-delta --code --baselineOrg
-        uuid-xxx-xxx-xxx --baselineProject uuid-xxx-xxx-xxx
-        Example: $ snyk code test --sarif | snyk-delta --code --baselineOrg
-        uuid-xxx-xxx-xxx --projectName "owner/repo" --targetReference "branchName"
-
-        Mode: code-delta sarif files
-        Description: Compares two SARIF files on Snyk Code Analysis issues
-        Example: $ snyk-delta --code old.sarif.json current.sarif.json
 
         Options:
           -h, --help                 Show help                                 [boolean]
@@ -60,9 +55,8 @@ describe('`snyk-delta help <...>`', () => {
                                      (patchable / upgradable). Matches the behaviour of
                                      \`--fail-on\` in snyk CLI
                                              [choices: \\"all\\", \\"upgradable\\", \\"patchable\\"]
-              --code                 Perform Snyk Code Analysis delta comparison of
-                                     either piped SARIF input, two Code Analysis
-                                     projects or two SARIF files               [boolean]
+              --code                 Perform Snyk Code Analysis delta comparison
+                                                                               [boolean]
               --projectName          Project name to compare against for Code Analysis
                                      delta comparison                           [string]
           -d, --debug                Show debug logs
