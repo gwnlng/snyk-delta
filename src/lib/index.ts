@@ -25,7 +25,6 @@ import {
 import {
   displayCodeDelta,
   displayCodeDeltaFromApi,
-  displayCodeDeltaFromApiIssues,
 } from './snyk/displayCodeDelta';
 export { SnykDeltaOutput } from './types';
 const Configstore = require('@snyk/configstore');
@@ -44,12 +43,8 @@ Snyk Tech Prevent Tool
  * Run Snyk Code delta:
  * - Piped: --code with SARIF on stdin and --baselineOrg (optional --baselineProject / --projectName).
  * - SARIF file comparison: --code and two file path arguments (old, current).
- * - Snapshots: --code with --currentOrg, --currentProject, --baselineOrg, --baselineProject (compare by key_asset).
  */
 async function runCodeDelta(argv: {
-  code?: boolean;
-  currentOrg?: string;
-  currentProject?: string;
   baselineOrg?: string;
   baselineProject?: string;
   projectName?: string;
@@ -61,37 +56,10 @@ async function runCodeDelta(argv: {
   const passIfNoBaseline = argv.setPassIfNoBaseline ?? false;
   const debug = getDebugModule();
 
-  const compareCodeAnalysisSnapshots =
-    !!(argv.currentOrg && argv.currentProject && argv.baselineOrg && argv.baselineProject);
-  if (compareCodeAnalysisSnapshots && !isPiped) {
-    debug(`Comparing code analysis snapshots for org: ${argv.currentOrg}, project: ${argv.currentProject}, baseline org: ${argv.baselineOrg}, baseline project: ${argv.baselineProject}`);
-    const baselineResponse = await snyk.getOrgCodeIssues(
-      argv.baselineOrg!,
-      argv.baselineProject,
-    );
-    const currentResponse = await snyk.getOrgCodeIssues(
-      argv.currentOrg!,
-      argv.currentProject,
-    );
-    const baselineKeyAssetSet = getBaselineKeyAssetSet(baselineResponse);
-    const currentData = currentResponse.data ?? [];
-    const newIssues = currentData.filter(
-      (issue) =>
-        !baselineKeyAssetSet.has(issue.attributes?.key_asset ?? ''),
-    );
-    displayCodeDeltaFromApiIssues(
-      newIssues,
-      baselineResponse.data?.length ?? 0,
-      currentData.length,
-    );
-    return newIssues.length > 0 ? 1 : 0;
-  }
-
   const fileArgs: string[] = (argv._ ?? []).filter(
     (a): a is string => typeof a === 'string' && a.length > 0 && !a.startsWith('--'),
   );
   const hasTwoFilePaths =
-    !compareCodeAnalysisSnapshots &&
     fileArgs.length >= 2 &&
     fileArgs[0] != null &&
     fileArgs[1] != null;
@@ -150,7 +118,7 @@ async function runCodeDelta(argv: {
   }
 
   throw new BadInputError(
-    'snyk-delta --code requires one of: (1) piped SARIF input with --baselineOrg, (2) two file paths (old SARIF, current SARIF), or (3) --currentOrg, --currentProject, --baselineOrg, --baselineProject for Snapshots code delta.',
+    'snyk-delta --code requires either (1) piped SARIF input with --baselineOrg, or (2) two file paths (old SARIF, current SARIF).',
   );
 }
 
@@ -188,8 +156,8 @@ const getDelta = async (
 
   if (argv.code) {
     try {
-      const code = await runCodeDelta(argv);
-      process.exitCode = code;
+      const exitCode = await runCodeDelta(argv);
+      process.exitCode = exitCode;
     } catch (err) {
       handleError(err as Error);
       process.exitCode = 2;

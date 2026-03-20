@@ -1,6 +1,6 @@
 /**
  * Test cases for Snyk Code delta feature (--code).
- * Modes: (1) Two SARIF file paths, (2) Piped SARIF + baseline from API, (3) Snapshots (compare by key_asset).
+ * Modes: (1) Two SARIF file paths, (2) Piped SARIF + baseline from API.
  * In Jest, process.stdin.isTTY is undefined so isPiped is true; we mock isTTY for file/API modes.
  */
 import nock from 'nock';
@@ -192,105 +192,6 @@ describe('Code delta - piped SARIF + baseline from API', () => {
   });
 });
 
-describe('Code delta - Snapshots (compare by key_asset)', () => {
-  const savedArgv = process.argv.slice();
-  const baselineOrg = '361fd3c0-41d4-4ea4-ba77-09bb17890967';
-  const baselineProject = 'proj-baseline-111';
-  const currentOrg = '361fd3c0-41d4-4ea4-ba77-09bb17890967';
-  const currentProject = 'proj-current-222';
-
-  beforeAll(() => {
-    process.env.SNYK_API = 'https://api.snyk.io/v1';
-    console.log = mockedLog;
-  });
-  afterAll(() => {
-    delete process.env.SNYK_API;
-    console.log = originalLog;
-    restoreStdinTTY();
-  });
-  beforeEach(() => {
-    consoleOutput = [];
-    mockStdinTTY(true);
-    process.argv.length = 0;
-    [
-      'node',
-      'snyk-delta',
-      '--code',
-      `--currentOrg=${currentOrg}`,
-      `--currentProject=${currentProject}`,
-      `--baselineOrg=${baselineOrg}`,
-      `--baselineProject=${baselineProject}`,
-    ].forEach((a) => process.argv.push(a));
-  });
-  afterEach(() => {
-    process.argv.length = 0;
-    savedArgv.forEach((a) => process.argv.push(a));
-    nock.cleanAll();
-  });
-
-  it('should run Snapshots mode and report no new findings when current matches baseline (exit 0)', async () => {
-    const baselineIssues = JSON.parse(
-      fs.readFileSync(
-        path.join(codeDeltaFixtures, 'rest-issues-baseline.json'),
-        'utf-8',
-      ),
-    );
-    const currentIssues = JSON.parse(
-      fs.readFileSync(
-        path.join(codeDeltaFixtures, 'rest-issues-current-same.json'),
-        'utf-8',
-      ),
-    );
-
-    let apiCallCount = 0;
-    nock('https://api.snyk.io')
-      .get(/\/rest\/orgs\/.*\/issues/)
-      .reply(200, () =>
-        ++apiCallCount === 1 ? baselineIssues : currentIssues,
-      );
-
-    const result = await getDelta(undefined, true);
-
-    const out = consoleOutput.join('\n');
-    expect(out).toContain('Snyk Code Delta');
-    expect([0, 2]).toContain(result);
-    if (result === 0 && out.includes('baseline vs current project')) {
-      expect(out).toContain('No new findings');
-    }
-  });
-
-  it('should run Snapshots mode and report new findings (exit 1)', async () => {
-    const baselineIssues = JSON.parse(
-      fs.readFileSync(
-        path.join(codeDeltaFixtures, 'rest-issues-baseline.json'),
-        'utf-8',
-      ),
-    );
-    const currentIssues = JSON.parse(
-      fs.readFileSync(
-        path.join(codeDeltaFixtures, 'rest-issues-current-with-new.json'),
-        'utf-8',
-      ),
-    );
-
-    let apiCallCount = 0;
-    nock('https://api.snyk.io')
-      .get(/\/rest\/orgs\/.*\/issues/)
-      .reply(200, () =>
-        ++apiCallCount === 1 ? baselineIssues : currentIssues,
-      );
-
-    const result = await getDelta(undefined, true);
-
-    const out = consoleOutput.join('\n');
-    expect([0, 1, 2]).toContain(result);
-    if (result === 1 && out.includes('baseline vs current project')) {
-      expect(out).toContain('New findings (in current, not in baseline)');
-      expect(out).toContain('SQL Injection');
-    }
-  });
-});
-
 describe('Code delta - error cases', () => {
   const savedArgv = process.argv.slice();
 
@@ -315,7 +216,7 @@ describe('Code delta - error cases', () => {
     nock.cleanAll();
   });
 
-  it('should exit 2 when --code used with no piped input, no two file paths, and no four API options', async () => {
+  it('should exit 2 when --code used with no piped input and no two file paths', async () => {
     const result = await getDelta(undefined, true);
     expect([0, 2]).toContain(result);
   });

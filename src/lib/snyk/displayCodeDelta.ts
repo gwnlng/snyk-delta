@@ -9,8 +9,6 @@ import {
   SarifCodeDeltaResult,
   SarifCodeDeltaAgainstApiResult,
 } from './sarifCodeDelta';
-import type { RestIssueResource } from './issuesTypes';
-
 function formatLocation(finding: SarifCodeFinding): string {
   const r = finding.region;
   if (!r) return finding.uri;
@@ -118,64 +116,4 @@ function displayCodeDeltaFromApi(delta: SarifCodeDeltaAgainstApiResult): void {
   }
 }
 
-/**
- * Print code delta when both baseline and current are from REST API (compare by key_asset).
- * Issues in current that are not in baseline (by key_asset) are printed.
- */
-function displayCodeDeltaFromApiIssues(
-  newIssues: RestIssueResource[],
-  baselineCount: number,
-  currentTotal: number,
-): void {
-  console.log(chalk.bold('Snyk Code Delta (baseline vs current project)'));
-  console.log('======================================================');
-  console.log(`Baseline: ${baselineCount} issue(s) (with key_asset)`);
-  console.log(`Current:  ${currentTotal} issue(s)`);
-  console.log('');
-
-  if (newIssues.length === 0) {
-    console.log(chalk.green('No new findings: all current findings exist in baseline.'));
-    return;
-  }
-
-  const label = newIssues.length === 1 ? 'finding' : 'findings';
-  console.log(
-    chalk.bgYellow.bold.black(
-      `\nNew findings (in current, not in baseline) (${newIssues.length} ${label})`,
-    ),
-  );
-  console.log('');
-  newIssues.forEach((issue, i) => {
-    const title = issue.attributes?.title ?? issue.id;
-    const severity = issue.attributes?.effective_severity_level ?? 'unknown';
-    const keyAsset = issue.attributes?.key_asset ?? '';
-    const file = issue.attributes?.coordinates?.[0]?.representations?.[0]?.sourceLocation?.file ?? '';
-    const startLine = issue.attributes?.coordinates?.[0]?.representations?.[0]?.sourceLocation?.region?.start?.line ?? '';
-    const startColumn = issue.attributes?.coordinates?.[0]?.representations?.[0]?.sourceLocation?.region?.start?.column ?? '';
-    const affectedSourceLocation = file ? `${file}:${startLine}:${startColumn}` : '';
-    const severityColor =
-      severity === 'critical' || severity === 'high'
-        ? chalk.red
-        : severity === 'medium'
-          ? chalk.yellow
-          : chalk.gray;
-    console.log(
-      `  ${i + 1}. ${chalk.bold(title)} [${severityColor(_.capitalize(severity))}]`,
-    );
-    if (keyAsset) {
-      console.log(`     key_asset: ${chalk.cyan(keyAsset)}`);
-    }
-    if (affectedSourceLocation) {
-      console.log(`     source location: ${chalk.cyan(affectedSourceLocation)}`);
-    }
-    console.log(`     id: ${issue.id}`);
-    console.log('');
-  });
-  console.log(
-    chalk.yellow(
-      `\n${newIssues.length} new finding(s) in current project not in baseline.`,
-    ),
-  );
-}
-
-export { displayCodeDelta, displayCodeDeltaFromApi, displayCodeDeltaFromApiIssues, formatLocation };
+export { displayCodeDelta, displayCodeDeltaFromApi, formatLocation };
