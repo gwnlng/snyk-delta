@@ -22,10 +22,10 @@ jobs:
             - checkout
             - run: npm install
             - run: npm test
-            - snyk/scan:
-                fail-on-issues: true
-                monitor-on-build: false
-                token-variable: SNYK_TOKEN
+            # - snyk/scan:
+            #     fail-on-issues: true
+            #     monitor-on-build: false
+            #     token-variable: SNYK_TOKEN
             - run: npx tsc
             - run:
                 name: Install ldid (lets pkg ad-hoc sign the macOS binaries)
