@@ -20,13 +20,6 @@ jobs:
             - image: cimg/node:22.23
         steps:
             - checkout
-            - run: npm install
-            - run: npm test
-            # - snyk/scan:
-            #     fail-on-issues: true
-            #     monitor-on-build: false
-            #     token-variable: SNYK_TOKEN
-            - run: npx tsc
             - run:
                 name: Install ldid (lets pkg ad-hoc sign the macOS binaries)
                 command: |
@@ -34,6 +27,13 @@ jobs:
                     sudo apt-get install -y ldid
                     ldid -h || true
                     command -v ldid
+            - run: npm install
+            - run: npm test
+            # - snyk/scan:
+            #     fail-on-issues: true
+            #     monitor-on-build: false
+            #     token-variable: SNYK_TOKEN
+            - run: npx tsc
     build-test-from-fork:
         docker:
             - image: cimg/node:22.23
